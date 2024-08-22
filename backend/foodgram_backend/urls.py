@@ -23,18 +23,16 @@ urlpatterns = [
     ),
     path('api/', include(router.urls)),
     path('api/recipes/<id>/favorite/', FavoriteRecipesViewSet.as_view(
-        {'post': 'create', 'delete': 'destroy'},),  name='favorite'
-        ),
+        {'post': 'create', 'delete': 'destroy'},), name='favorite'
+    ),
     path(r'api/recipes/<id>/get-link/', RecipesViewSet.as_view(
         {'get': 'get_link'},),),
     path('api/recipes/<id>/shopping_cart/', ShoppingCartViewSet.as_view(
         {'post': 'create', 'delete': 'destroy'},), name='shopping_cart'
     ),
     path(r'api/users/subscriptions/', SubscriptionViewSet.as_view(
-        {'get': 'list'},
+        {'get': 'list'},), name='subscriptions'
     ),
-         name='subscriptions'
-         ),
     path('api/', include('djoser.urls')),
     path('api/auth/', include('djoser.urls.authtoken')),
     path('api/users/me/avatar/', CustomUserViewSet.as_view(

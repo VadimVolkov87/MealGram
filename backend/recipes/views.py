@@ -78,11 +78,11 @@ class ShoppingCartViewSet(ListCreateDestroyViewSet):
         purchase_list = ShoppingCart.objects.filter(
             user=request.user).order_by('recipe__ingredients__name').filter(
                 recipe__ingredients__name__exact=F('recipe__ingredients__name')
-                ).values(
+            ).values(
                 'recipe__ingredients__name',
                 'recipe__ingredients__measurement_unit'
             ).annotate(total_amount=Sum(
-                 'recipe__ingredientinrecipe__amount'))
+                'recipe__ingredientinrecipe__amount'))
         with open('shopping_list.txt', 'w') as file:
             for purchase in purchase_list:
                 name = purchase["recipe__ingredients__name"]
@@ -145,11 +145,12 @@ class CustomUserViewSet(UserViewSet):
         """Метод для обновления данных профиля пользователем."""
         user = get_object_or_404(CustomUser, id=request.user.id)
         serializer = CustomUserSerializer(
-                user, data=request.data, partial=True
-            )
+                 user, data=request.data, partial=True
+        )
         if serializer.is_valid() and 'avatar' in request.data:
             serializer.save()
-            return Response({"avatar": serializer.data.get('avatar')}, status=status.HTTP_200_OK)
+            return Response({"avatar": serializer.data.get('avatar')},
+                            status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, *args, **kwargs):

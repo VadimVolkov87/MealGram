@@ -41,7 +41,7 @@ class CustomUserSerializer(UserSerializer):
         if (self.instance == obj
             or isinstance(self.context['request'].user, AnonymousUser)
             or not obj.subscriptions.filter(
-             user_id=self.context['request'].user).exists()):
+               user_id=self.context['request'].user).exists()):
             return False
         return True
 
@@ -204,10 +204,11 @@ class SubscriptionSerializer(serializers.ModelSerializer):
                '=')[0] == 'recipes_limit'):
             n = int(self.context['request'].META['QUERY_STRING'].split('=')[1])
             recipes_list = list(Recipe.objects.filter(
-             author_id=obj.subscription_id).values(
-                 'id', 'name', 'image', 'cooking_time'))
-            chunked_recipes_list = [recipes_list[i:i + n] for i in range(
-                0, len(recipes_list), n)]
+                       author_id=obj.subscription_id).values(
+                       'id', 'name', 'image', 'cooking_time'))
+            chunked_recipes_list = [
+                               recipes_list[i:i + n]
+                               for i in range(0, len(recipes_list), n)]
             if len(chunked_recipes_list) == 0:
                 return list(Recipe.objects.filter(author_id=obj.subscription_id
                                                   ).values('id', 'name',
@@ -366,8 +367,8 @@ class RecipesSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """Метод обновления записи."""
-        if ('ingredients' not in self.initial_data.keys()) or (
-             self.initial_data['ingredients'] == []):
+        if (('ingredients' not in self.initial_data.keys())
+           or (self.initial_data['ingredients'] == [])):
             raise serializers.ValidationError('Требуется ввести ингредиенты.')
         recipe = get_object_or_404(
             Recipe, id=self.context['request'].
