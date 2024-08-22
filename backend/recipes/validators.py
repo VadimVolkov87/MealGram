@@ -22,5 +22,5 @@ def ingredient_validator(ingredients):
     count_ingredients = collections.Counter(ingredient_id_list)
     if 2 in count_ingredients.values():
         raise serializers.ValidationError(
-           'Вы ввели повторяющиеся ингредиенты.'
+            'Вы ввели повторяющиеся ингредиенты.'
         )
