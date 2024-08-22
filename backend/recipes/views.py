@@ -82,7 +82,7 @@ class ShoppingCartViewSet(ListCreateDestroyViewSet):
                 'recipe__ingredients__name',
                 'recipe__ingredients__measurement_unit'
         ).annotate(total_amount=Sum(
-                'recipe__ingredientinrecipe__amount'
+            'recipe__ingredientinrecipe__amount'
         ))
         with open('shopping_list.txt', 'w') as file:
             for purchase in purchase_list:
