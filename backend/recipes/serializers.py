@@ -34,13 +34,13 @@ class CustomUserSerializer(UserSerializer):
     is_subscribed = serializers.SerializerMethodField(
         'get_is_subscribed',
         read_only=True,
-        )
+    )
 
     def get_is_subscribed(self, obj):
         """Метод проверки подписки пользователя."""
-        if (self.instance == obj or
-            isinstance(self.context['request'].user, AnonymousUser) or
-            not obj.subscriptions.filter(
+        if (self.instance == obj
+            or isinstance(self.context['request'].user, AnonymousUser)
+            or not obj.subscriptions.filter(
              user_id=self.context['request'].user).exists()):
             return False
         return True
