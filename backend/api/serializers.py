@@ -8,9 +8,10 @@ from djoser.serializers import UserSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import NotAuthenticated
 
-from .models import (CustomUser, Favorite, Ingredient, IngredientInRecipe,
-                     Recipe, RecipeTag, ShoppingCart, Subscription, Tag)
 from .validators import ingredient_validator
+from recipes.models import (CustomUser, Favorite, Ingredient,
+                            IngredientInRecipe, Recipe, RecipeTag,
+                            ShoppingCart, Subscription, Tag)
 
 
 class Base64ImageField(serializers.ImageField):
@@ -36,15 +37,6 @@ class CustomUserSerializer(UserSerializer):
         read_only=True,
     )
 
-    def get_is_subscribed(self, obj):
-        """Метод проверки подписки пользователя."""
-        if (self.instance == obj
-            or isinstance(self.context['request'].user, AnonymousUser)
-            or not obj.subscriptions.filter(
-                user_id=self.context['request'].user).exists()):
-            return False
-        return True
-
     def to_representation(self, instance):
         """Метод проверки пользователя на анонимность."""
         if isinstance(instance, AnonymousUser):
@@ -64,6 +56,15 @@ class CustomUserSerializer(UserSerializer):
         instance.avatar = validated_data.get('avatar', instance.avatar)
         instance.save()
         return instance
+
+    def get_is_subscribed(self, obj):
+        """Метод проверки подписки пользователя."""
+        if (self.context == {} or isinstance(self.context['request'].user,
+                                             AnonymousUser)
+            or not obj.subscriptions.filter(
+                user_id=self.context['request'].user).exists()):
+            return False
+        return True
 
     class Meta:
         """
@@ -180,8 +181,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     first_name = serializers.ReadOnlyField(source='subscription.first_name',)
     last_name = serializers.ReadOnlyField(source='subscription.last_name',)
     email = serializers.ReadOnlyField(source='subscription.email',)
-    is_subscribed = serializers.ReadOnlyField(
-        source='subscription.is_subscribed',)
+    is_subscribed = serializers.SerializerMethodField(
+        method_name='get_is_subscribed')
     avatar = Base64ImageField(source='subscription.avatar', read_only=True)
     recipes_count = serializers.SerializerMethodField(
         method_name='get_recipes_count')
@@ -197,28 +198,34 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         model = Subscription
         read_only_fields = ('id', 'recipes_count', 'recipes',)
 
+    def get_is_subscribed(self, obj):
+        """Метод проверки подписки пользователя."""
+        if (isinstance(self.context['request'].user, AnonymousUser)
+            or (self.context['request'].user.subscriber.filter(
+                subscription_id=obj.subscription_id).exists() is False)):
+            return False
+        return True
+
     def get_recipes(self, obj):
         """Метод получения рецептов."""
-        if (isinstance(self.context['request'].META['QUERY_STRING'], str)
+        recipes_list = Recipe.objects.filter(
+            author_id=obj.subscription_id).values(
+            'id', 'name', 'image', 'cooking_time')
+        recipes_list_2 = []
+        for recipe in recipes_list:
+            short_url = recipe.pop('image')
+            long_url = '/media/' + short_url
+            recipe['image'] = long_url
+            recipes_list_2.append(recipe)
+        if (self.context['request'].META['QUERY_STRING'] != ''
            and self.context['request'].META['QUERY_STRING'].split(
-               '=')[0] == 'recipes_limit'):
-            n = int(self.context['request'].META['QUERY_STRING'].split('=')[1])
-            recipes_list = list(Recipe.objects.filter(
-                author_id=obj.subscription_id).values(
-                'id', 'name', 'image', 'cooking_time'))
-            chunked_recipes_list = [
-                recipes_list[i:i + n]
-                for i in range(0, len(recipes_list), n)]
-            if len(chunked_recipes_list) == 0:
-                return list(Recipe.objects.filter(author_id=obj.subscription_id
-                                                  ).values('id', 'name',
-                                                           'image',
-                                                           'cooking_time'))
-            return [recipes_list[i:i + n] for i in range(0, len(recipes_list
-                                                                ), n)][0]
-        return list(Recipe.objects.filter(author_id=obj.subscription_id
-                                          ).values('id', 'name', 'image',
-                                                   'cooking_time'))
+               '=')[::-1][1][:-14:-1] == 'timil_sepicer'):
+            n = int(self.context['request'].META['QUERY_STRING'].split(
+                '=')[::-1][0])
+            if len(recipes_list_2[:n]) == 0:
+                return recipes_list_2
+            return recipes_list_2[:n]
+        return recipes_list_2
 
     def get_recipes_count(self, obj):
         """Метод расчета количества рецептов у автора."""

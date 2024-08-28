@@ -3,7 +3,7 @@ import collections
 
 from rest_framework import serializers
 
-from .models import Ingredient
+from recipes.models import Ingredient
 
 
 def ingredient_validator(ingredients):

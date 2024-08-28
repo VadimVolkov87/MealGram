@@ -11,6 +11,26 @@ UserAdmin.fieldsets += (
 )
 
 
+@admin.action(description="Update object")
+def make_update(modeladmin, request, queryset):
+    """Метод обновления объекта."""
+    queryset.update()
+
+
+class RecipeTagInline(admin.StackedInline):
+    """Класс установки внесения ингредиентов в модель Pecipe."""
+
+    model = Recipe.tags.through
+    min_num = 1
+
+
+class RecipeIngredientInline(admin.StackedInline):
+    """Класс установки внесения ингредиентов в модель Pecipe."""
+
+    model = Recipe.ingredients.through
+    min_num = 1
+
+
 class UsersAdmin(UserAdmin):
     """Класс настройки отображения раздела пользователей."""
 
@@ -24,6 +44,7 @@ class UsersAdmin(UserAdmin):
     search_fields = ('username', 'email', 'first_name',)
     list_display_links = ('id',)
     empty_value_display = 'Не задано'
+    actions = [make_update]
 
 
 @admin.register(Tag)
@@ -38,6 +59,7 @@ class TagAdmin(admin.ModelAdmin):
     search_fields = ('name',)
     prepopulated_fields = {'slug': ('name',)}
     empty_value_display = 'Не задано'
+    actions = [make_update]
 
 
 @admin.register(Ingredient)
@@ -51,20 +73,27 @@ class IngredientAdmin(admin.ModelAdmin):
     list_per_page = OBJECTS_PER_PAGE
     search_fields = ('name',)
     empty_value_display = 'Не задано'
+    actions = [make_update]
 
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     """Класс настройки отображения раздела рецептов."""
 
-    list_display = ('id', 'name', 'author', 'text', 'get_ingredients',
+    list_display = ('id', 'name', 'author', 'get_ingredients',
                     'get_tags', 'get_count_is_favorited',)
-    list_editable = ('name', 'author', 'text',)
+    list_editable = ('name', 'author',)
     list_display_links = ('id',)
     ordering = ('name',)
     search_fields = ('name', 'author',)
     list_filter = ('author', 'tags',)
     empty_value_display = 'Не задано'
+    actions = [make_update]
+    inlines = [
+        RecipeTagInline,
+        RecipeIngredientInline,
+
+    ]
 
     @admin.display(description='число добавлений в избранное')
     def get_count_is_favorited(self, object):
@@ -96,6 +125,7 @@ class FavoriteAdmin(admin.ModelAdmin):
     search_fields = ('user',)
     list_filter = ('user', 'recipe',)
     empty_value_display = 'Не задано'
+    actions = [make_update]
 
 
 @admin.register(Subscription)
@@ -110,6 +140,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
     search_fields = ('user',)
     list_filter = ('user', 'subscription',)
     empty_value_display = 'Не задано'
+    actions = [make_update]
 
 
 admin.site.register(CustomUser, UsersAdmin)

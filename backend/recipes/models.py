@@ -1,5 +1,6 @@
 """Модуль моделией приложения Recipes."""
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 
@@ -14,7 +15,7 @@ class CustomUser(AbstractUser):
         upload_to='avatar/images/',
         null=True,
         default=None)
-    is_subscribed = models.BooleanField('Подписан', default=True,)
+    is_subscribed = models.BooleanField('Подписан', default=False,)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ('username', 'first_name', 'last_name', 'password',)
@@ -61,6 +62,7 @@ class Ingredient(models.Model):
         ordering = ('name',)
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
+#        unique_together = ('name', 'measurement_unit')
 
     def __str__(self):
         """Метод возвращающий имя."""
@@ -183,6 +185,14 @@ class Subscription(models.Model):
         ordering = ('id',)
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
+
+        unique_together = ('user', 'subscription')
+
+    def clean(self):
+#        cleaned_data = super().clean()
+        if self.user == self.subscription:
+            raise ValidationError("Вы подписываетесь на самого себя.")
+        return super().save(self)
 
 
 class Favorite(models.Model):

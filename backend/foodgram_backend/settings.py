@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'djoser',
     'recipes.apps.RecipesConfig',
+    'api.apps.ApiConfig',
 ]
 
 MIDDLEWARE = [
@@ -133,8 +134,8 @@ DJOSER = {
         'user_list': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
     },
     'SERIALIZERS': {
-        'user': 'recipes.serializers.CustomUserSerializer',
-        'current_user': 'recipes.serializers.CustomUserSerializer',
+        'user': 'api.serializers.CustomUserSerializer',
+        'current_user': 'api.serializers.CustomUserSerializer',
     },
 }
 

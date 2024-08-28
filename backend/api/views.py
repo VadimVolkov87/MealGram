@@ -1,26 +1,24 @@
 """Модуль представлений приложения."""
-from wsgiref.util import FileWrapper
-
 from django.db.models import F, Sum
 from django.http import HttpResponse
-from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.exceptions import NotFound
-from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 
 from .filters import IngredientFilter, RecipeFilter
-from .models import CustomUser, Ingredient, Recipe, ShoppingCart, Tag
+from .paginators import CustomPageNumberPagination
 from .permissions import IsOwnerOnly, IsOwnerOrReadOnly
 from .serializers import (CustomUserSerializer, FavoriteRecipesSerializer,
                           IngredientSerializer, RecipeGetSerializer,
                           RecipesSerializer, ShoppingCartSerializer,
                           SubscriptionSerializer, TagSerializer)
+from recipes.models import CustomUser, Ingredient, Recipe, ShoppingCart, Tag
 
 
 class ListCreateDestroyViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
@@ -90,9 +88,11 @@ class ShoppingCartViewSet(ListCreateDestroyViewSet):
                 unit = purchase["recipe__ingredients__measurement_unit"]
                 total_amount = purchase['total_amount']
                 file.write(f'{name} ({unit}) - {total_amount}\n')
-        file = open('shopping_list.txt', 'r')
-        return HttpResponse(FileWrapper(file),
-                            content_type='application/txt')
+        data = open('shopping_list.txt', 'r')
+        response = HttpResponse(data, "application")
+        response['Content-Disposition'
+                 ] = "attachment; filename='shopping_list.txt'"
+        return response
 
 
 class FavoriteRecipesViewSet(ListCreateDestroyViewSet):
@@ -138,7 +138,7 @@ class FavoriteRecipesViewSet(ListCreateDestroyViewSet):
 class CustomUserViewSet(UserViewSet):
     """Класс представления CustomUserViewSet."""
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly,)
     queryset = CustomUser.objects.all()
     serializer_class = CustomUserSerializer
 
@@ -191,7 +191,7 @@ class SubscriptionViewSet(ListCreateDestroyViewSet):
     serializer_class = SubscriptionSerializer
     permission_classes = (IsAuthenticated,)
     http_method_names = ('get', 'post', 'delete',)
-    pagination_class = LimitOffsetPagination
+    pagination_class = CustomPageNumberPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ('subscription__username',)
 
@@ -232,8 +232,8 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
     permission_classes = (IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly)
     queryset = Recipe.objects.all()
-    serializer_class = RecipesSerializer
     lookup_field = 'id'
+    pagination_class = CustomPageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 

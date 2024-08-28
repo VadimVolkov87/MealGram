@@ -4,7 +4,7 @@ from django_filters import MultipleChoiceFilter
 from django_filters import rest_framework as filters
 from django_filters.fields import MultipleChoiceField
 
-from .models import Ingredient, Recipe
+from recipes.models import Ingredient, Recipe
 
 
 class MultipleCharField(MultipleChoiceField):
