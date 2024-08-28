@@ -62,7 +62,6 @@ class Ingredient(models.Model):
         ordering = ('name',)
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
-#        unique_together = ('name', 'measurement_unit')
 
     def __str__(self):
         """Метод возвращающий имя."""
@@ -189,7 +188,6 @@ class Subscription(models.Model):
         unique_together = ('user', 'subscription')
 
     def clean(self):
-#        cleaned_data = super().clean()
         if self.user == self.subscription:
             raise ValidationError("Вы подписываетесь на самого себя.")
         return super().save(self)

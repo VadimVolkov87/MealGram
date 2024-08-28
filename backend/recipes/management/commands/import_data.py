@@ -1,3 +1,4 @@
+"""Модуль пользовательского скрипта загрузки файла."""
 import csv
 import os
 from django.core.management.base import BaseCommand
@@ -35,7 +36,6 @@ class Command(BaseCommand):
     def import_ingredients(self, row):
         """Импорт данных в модель Ingredient."""
         obj, created = Ingredient.objects.get_or_create(
-#            id=row['id'],
             name=row['name'],
             measurement_unit=row['measurement_unit']
         )

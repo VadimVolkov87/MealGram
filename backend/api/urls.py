@@ -1,7 +1,6 @@
 """Модуль маршрутизаторов приложения Foodgram."""
 from django.conf import settings
 from django.conf.urls.static import static
-#from django.contrib import admin
 from django.urls import include, path
 from rest_framework import routers
 
@@ -16,7 +15,6 @@ router.register('tags', TagViewSet, basename='tags')
 router.register('recipes', RecipesViewSet, basename='recipes')
 
 urlpatterns = [
-    #path('admin/', admin.site.urls),
     path('recipes/download_shopping_cart/', ShoppingCartViewSet.as_view(
         {'get': 'get_purchase_list', },),
         name='shopping_cart_download'
