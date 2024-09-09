@@ -108,8 +108,8 @@ class FoodgramUserViewSet(UserViewSet):
     def subscriptions(self, request):
         """Метод для вывода подписок."""
         queryset = FoodgramUser.objects.filter(
-                    author_subscriptions__user_id=request.user).order_by(
-                    'last_name').annotate(recipes_count=Count('recipes'))
+                author_subscriptions__user_id=request.user).order_by(
+                'last_name').annotate(recipes_count=Count('recipes'))
         page = self.paginate_queryset(queryset)
         if page is not None:
             if (request.query_params != {}
@@ -123,11 +123,11 @@ class FoodgramUserViewSet(UserViewSet):
                     many=True)
                 return self.get_paginated_response(serializer.data)
             serializer = SubscriptionGetSerializer(
-                    FoodgramUser.objects.filter(
-                     author_subscriptions__user_id=request.user).annotate(
-                     recipes_count=Count('recipes')),
-                    context={'request': request},
-                    many=True)
+                FoodgramUser.objects.filter(
+                    author_subscriptions__user_id=request.user).annotate(
+                    recipes_count=Count('recipes')),
+                context={'request': request},
+                many=True)
             return self.get_paginated_response(serializer.data)
         serializer = SubscriptionGetSerializer(
             FoodgramUser.objects.filter(

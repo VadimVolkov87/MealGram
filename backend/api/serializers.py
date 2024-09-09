@@ -162,8 +162,8 @@ class SubscriptionGetSerializer(FoodgramUserSerializer):
                 many=True
             ).data
         return RecipeGetShortSerializer(
-                instance=recipes_list, context=self.context,
-                many=True
+            instance=recipes_list, context=self.context,
+            many=True
         ).data
 
 
