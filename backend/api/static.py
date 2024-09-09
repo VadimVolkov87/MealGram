@@ -10,6 +10,6 @@ def create_ingredients_list(recipe_id, ingredients):
             recipe_id=recipe_id,
             ingredient_id=ingredient['id'].id,
             amount=ingredient['amount'],
-            )
+        )
         ingredients_list.append(new_ingredient)
     return ingredients_list

@@ -28,8 +28,8 @@ class FoodgramUserSerializer(UserSerializer):
 
         model = FoodgramUser
         fields = ['id', 'username', 'first_name', 'last_name',
-                  'email',] + ['is_subscribed', 'avatar',]
-        read_only_fields = ['id',]
+                  'email', ] + ['is_subscribed', 'avatar', ]
+        read_only_fields = ['id', ]
 
     def get_is_subscribed(self, obj):
         """Метод проверки подписки пользователя."""
@@ -145,10 +145,10 @@ class SubscriptionGetSerializer(FoodgramUserSerializer):
         """Внутренний класс сериализатора для модели и отображаемых полей."""
 
         fields = ['id', 'username', 'first_name', 'last_name', 'email',
-                  'is_subscribed', 'avatar',] + ['recipes_count', 'recipes',]
+                  'is_subscribed', 'avatar', ] + ['recipes_count', 'recipes', ]
 
         model = FoodgramUser
-        read_only_fields = ['id',] + ['recipes_count', 'recipes',]
+        read_only_fields = ['id', ] + ['recipes_count', 'recipes', ]
 
     def get_recipes(self, obj):
         """Метод получения рецептов."""
@@ -158,13 +158,13 @@ class SubscriptionGetSerializer(FoodgramUserSerializer):
             n = int(self.context['request'].query_params.get(
                 'recipes_limit'))
             return RecipeGetShortSerializer(
-             instance=recipes_list[:n], context=self.context,
-             many=True
+                instance=recipes_list[:n], context=self.context,
+                many=True
             ).data
         return RecipeGetShortSerializer(
-                 instance=recipes_list, context=self.context,
-                 many=True
-                ).data
+                instance=recipes_list, context=self.context,
+                many=True
+        ).data
 
 
 class SubscriptionPostSerializer(serializers.ModelSerializer):
@@ -187,7 +187,8 @@ class SubscriptionPostSerializer(serializers.ModelSerializer):
                 'Вы уже подписаны на этого пользователя!'
             )
         if (self.context['request'].user.id == int(
-             self.context['request'].parser_context['kwargs'].get('id'))):
+            self.context['request'].parser_context['kwargs'].get('id')
+        )):
             raise serializers.ValidationError(
                 'Вы не можете подписаться на себя!'
             )
@@ -227,7 +228,7 @@ class FavoriteShoppingcartBaseSerializer(serializers.ModelSerializer):
             recipe_id=self.context.get('request').
             parser_context['kwargs'].get('id'),
             user_id=self.context.get('request').user.id
-                                  ).exists():
+        ).exists():
             raise serializers.ValidationError(
                 'Вы уже добавили этот рецепт!'
             )
