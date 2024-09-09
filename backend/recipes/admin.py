@@ -1,8 +1,10 @@
 """Модуль регистрации моделей приложения и полей в админке."""
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.utils.safestring import mark_safe
 
-from .models import CustomUser, Favorite, Ingredient, Recipe, Subscription, Tag
+from .models import (Favorite, FoodgramUser, Ingredient, Recipe,
+                     Subscription, Tag)
 
 OBJECTS_PER_PAGE = 10
 
@@ -11,17 +13,17 @@ UserAdmin.fieldsets += (
 )
 
 
-@admin.action(description="Update object")
-def make_update(modeladmin, request, queryset):
-    """Метод обновления объекта."""
-    queryset.update()
+#@admin.action(description="Update object")
+#def make_update(modeladmin, request, queryset):
+#    """Метод обновления объекта."""
+#    queryset.update()
 
 
-class RecipeTagInline(admin.StackedInline):
-    """Класс установки внесения ингредиентов в модель Pecipe."""
-
-    model = Recipe.tags.through
-    min_num = 1
+#class RecipeTagInline(admin.StackedInline):
+#    """Класс установки внесения ингредиентов в модель Pecipe."""
+#
+#    model = Recipe.tags.through
+#    min_num = 1
 
 
 class RecipeIngredientInline(admin.StackedInline):
@@ -31,20 +33,21 @@ class RecipeIngredientInline(admin.StackedInline):
     min_num = 1
 
 
+@admin.register(FoodgramUser)
 class UsersAdmin(UserAdmin):
     """Класс настройки отображения раздела пользователей."""
 
     list_display = ('id', 'username', 'email', 'first_name', 'last_name',
-                    'password', 'avatar', 'is_subscribed', 'is_superuser',
+                    'avatar', 'is_superuser',
                     'is_staff',)
     list_editable = ('username', 'email', 'first_name', 'last_name',
-                     'password', 'avatar', 'is_superuser', 'is_staff',)
+                     'avatar', 'is_superuser', 'is_staff',)
     ordering = ('username',)
     list_per_page = OBJECTS_PER_PAGE
     search_fields = ('username', 'email', 'first_name',)
     list_display_links = ('id',)
     empty_value_display = 'Не задано'
-    actions = [make_update]
+#    actions = [make_update]
 
 
 @admin.register(Tag)
@@ -59,7 +62,7 @@ class TagAdmin(admin.ModelAdmin):
     search_fields = ('name',)
     prepopulated_fields = {'slug': ('name',)}
     empty_value_display = 'Не задано'
-    actions = [make_update]
+#    actions = [make_update]
 
 
 @admin.register(Ingredient)
@@ -73,7 +76,7 @@ class IngredientAdmin(admin.ModelAdmin):
     list_per_page = OBJECTS_PER_PAGE
     search_fields = ('name',)
     empty_value_display = 'Не задано'
-    actions = [make_update]
+#    actions = [make_update]
 
 
 @admin.register(Recipe)
@@ -88,17 +91,17 @@ class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('name', 'author',)
     list_filter = ('author', 'tags',)
     empty_value_display = 'Не задано'
-    actions = [make_update]
+#    actions = [make_update]
     inlines = [
-        RecipeTagInline,
+#        RecipeTagInline,
         RecipeIngredientInline,
 
     ]
 
-    @admin.display(description='число добавлений в избранное')
+    @admin.display(description='в избранном')
     def get_count_is_favorited(self, object):
         """Метод получения числа добавлений в избранное."""
-        return len(Favorite.objects.filter(recipe_id=object.id))
+        return object.favorite_recipe.all().count()
 
     @admin.display(description='теги')
     def get_tags(self, object):
@@ -111,6 +114,13 @@ class RecipeAdmin(admin.ModelAdmin):
         return ',\n'.join((
             ingredients.name for ingredients in object.ingredients.all()
         ))
+
+    @admin.display(description='картинка')
+    def get_image(self, object):
+        """Метод получения картинки."""
+        return mark_safe(
+            f'<img src={object.image.url} width="80" height="60">'
+        )
 
 
 @admin.register(Favorite)
@@ -125,22 +135,22 @@ class FavoriteAdmin(admin.ModelAdmin):
     search_fields = ('user',)
     list_filter = ('user', 'recipe',)
     empty_value_display = 'Не задано'
-    actions = [make_update]
+#    actions = [make_update]
 
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
     """Класс настройки отображения раздела подписок."""
 
-    list_display = ('id', 'user', 'subscription',)
-    list_editable = ('user', 'subscription',)
+    list_display = ('id', 'user', 'recipe_author',)
+    list_editable = ('user', 'recipe_author',)
     list_display_links = ('id',)
     ordering = ('user',)
     list_per_page = OBJECTS_PER_PAGE
     search_fields = ('user',)
-    list_filter = ('user', 'subscription',)
+    list_filter = ('user', 'recipe_author',)
     empty_value_display = 'Не задано'
-    actions = [make_update]
+#    actions = [make_update]
 
 
-admin.site.register(CustomUser, UsersAdmin)
+# admin.site.register(FoodgramUser, UsersAdmin)

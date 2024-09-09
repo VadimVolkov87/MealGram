@@ -1,15 +1,8 @@
 """Модуль пользовательской пагинации."""
-from rest_framework.pagination import (LimitOffsetPagination,
-                                       PageNumberPagination)
+from rest_framework.pagination import PageNumberPagination
 
 
-class CustomPageNumberPagination(PageNumberPagination):
+class RecipesPageNumberPagination(PageNumberPagination):
     """Класс пользовательской пагинации."""
 
     page_size_query_param = 'limit'
-
-
-class CustomPagination(LimitOffsetPagination):
-    """Класс пагинации переопределяющий имя параметра запроса."""
-
-    limit_query_param = 'recipes_limit'

@@ -1,29 +1,42 @@
 """Модуль моделией приложения Recipes."""
+import random
+import string
+
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
+from .constants import (EMAIL_MAX_LENGTH,
+                        INGREDIENT_MEASURMENT_UNIT_MAX_LENGTH,
+                        INGREDIENT_NAME_MAX_LENGTH,
+                        MAX_VALIDATOR_VALUE, MIN_VALIDATOR_VALUE,
+                        NAME_MAX_LENGTH, RECIPE_NAME_MAX_LENGTH,
+                        TAG_MAX_LENGTH)
 
-class CustomUser(AbstractUser):
+
+class FoodgramUser(AbstractUser):
     """Пользовательская модель приложения."""
 
-    email = models.EmailField(max_length=254, unique=True, blank=False)
-    first_name = models.CharField('Имя', max_length=150, blank=False)
-    last_name = models.CharField('Фамилия', max_length=150, blank=False)
+    USERNAME_FIELD = 'email'
+
+    email = models.EmailField('Емейл', max_length=EMAIL_MAX_LENGTH,
+                              unique=True, blank=False)
+    first_name = models.CharField('Имя', max_length=NAME_MAX_LENGTH,
+                                  blank=False)
+    last_name = models.CharField('Фамилия', max_length=NAME_MAX_LENGTH,
+                                 blank=False)
     avatar = models.ImageField(
         upload_to='avatar/images/',
         null=True,
         default=None)
-    is_subscribed = models.BooleanField('Подписан', default=False,)
 
-    USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ('username', 'first_name', 'last_name', 'password',)
 
     class Meta:
         """Внутренний класс для сортировки объектов."""
 
-        ordering = ('id',)
+        ordering = ('last_name',)
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
@@ -35,8 +48,10 @@ class CustomUser(AbstractUser):
 class Tag(models.Model):
     """Модель Тег."""
 
-    name = models.CharField('Название', max_length=32, unique=True)
-    slug = models.SlugField('Слаг тэга', max_length=32, unique=True)
+    name = models.CharField('Название', max_length=TAG_MAX_LENGTH,
+                            unique=True)
+    slug = models.SlugField('Слаг тэга', max_length=TAG_MAX_LENGTH,
+                            unique=True)
 
     class Meta:
         """Внутренний класс для сортировки объектов."""
@@ -53,8 +68,11 @@ class Tag(models.Model):
 class Ingredient(models.Model):
     """Модель Ингредиент."""
 
-    name = models.CharField('Название', max_length=128, unique=True)
-    measurement_unit = models.CharField('Единица измерения', max_length=64)
+    name = models.CharField('Название', max_length=INGREDIENT_NAME_MAX_LENGTH,
+                            unique=True)
+    measurement_unit = models.CharField(
+        'Единица измерения', max_length=INGREDIENT_MEASURMENT_UNIT_MAX_LENGTH
+    )
 
     class Meta:
         """Внутренний класс для сортировки объектов."""
@@ -62,6 +80,10 @@ class Ingredient(models.Model):
         ordering = ('name',)
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
+
+        models.UniqueConstraint(
+            fields=('name', 'measurement_unit'),
+            name='unique_ingredient')
 
     def __str__(self):
         """Метод возвращающий имя."""
@@ -72,11 +94,12 @@ class Recipe(models.Model):
     """Модель рецептов."""
 
     author = models.ForeignKey(
-        CustomUser,
+        FoodgramUser,
         on_delete=models.CASCADE,
         verbose_name='Автор рецепта',
     )
-    name = models.CharField('Название рецепта', max_length=256)
+    name = models.CharField('Название рецепта',
+                            max_length=RECIPE_NAME_MAX_LENGTH)
     image = models.ImageField(
         'Фото', upload_to='recipes/images/', default=None
     )
@@ -86,14 +109,18 @@ class Recipe(models.Model):
         verbose_name='Ингредиенты',
     )
     tags = models.ManyToManyField(
-        Tag, through='RecipeTag',
-        verbose_name='Теги',
+        Tag, verbose_name='Теги',
     )
     cooking_time = models.PositiveSmallIntegerField(
         'Время приготовления',
         validators=[
             MinValueValidator(
-                1, message='Введенное количество меньше допустимого.'
+                MIN_VALIDATOR_VALUE,
+                message='Введенное количество не может быть меньше 1.'
+            ),
+            MaxValueValidator(
+                MAX_VALIDATOR_VALUE,
+                message='Введенное количество не может быть больше 32767.'
             )
         ]
     )
@@ -101,20 +128,13 @@ class Recipe(models.Model):
         'Дата и время создания',
         auto_now_add=True
     )
-    is_favorited = models.BooleanField(
-        'избранные', default=False
-    )
-    is_in_shopping_cart = models.BooleanField(
-        'в корзине', default=False
-    )
-
-    REQUIRED_FIELDS = ('name', 'image', 'text', 'ingredients', 'tags',
-                       'cooking_time',)
+    short_link = models.URLField(
+        'Короткая ссылка', unique=True, editable=False)
 
     class Meta:
         """Внутренний класс для сортировки и связанного имени объектов."""
 
-        ordering = ('published_at',)
+        ordering = ('-published_at',)
         default_related_name = 'recipes'
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
@@ -122,6 +142,15 @@ class Recipe(models.Model):
     def __str__(self):
         """Метод возвращающий имя."""
         return self.name
+
+    def save(self, **kwargs):
+        """Функция генерации короткой ссылки."""
+        if self.short_link != '':
+            super().save(**kwargs)
+        else:
+            self.short_link = ''.join(random.choice(
+                string.ascii_letters + string.digits) for _ in range(5))
+            super().save(**kwargs)
 
 
 class IngredientInRecipe(models.Model):
@@ -137,7 +166,12 @@ class IngredientInRecipe(models.Model):
         'Количество',
         validators=[
             MinValueValidator(
-                1, message='Введенное количество не может быть меньше 1.'
+                MIN_VALIDATOR_VALUE,
+                message='Введенное количество не может быть меньше 1.'
+            ),
+            MaxValueValidator(
+                MAX_VALIDATOR_VALUE,
+                message='Введенное количество не может быть больше 32767.'
             )
         ]
     )
@@ -149,85 +183,83 @@ class IngredientInRecipe(models.Model):
         verbose_name_plural = 'Ингредиенты в рецепте'
         default_related_name = 'ingredientinrecipe'
 
-
-class RecipeTag(models.Model):
-    """Промежуточная модель тэгов у рецепта."""
-
-    recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, verbose_name='Рецепт',
-    )
-    tag = models.ForeignKey(
-        Tag, on_delete=models.CASCADE, verbose_name='Тег',
-    )
-
-    class Meta:
-        """Внутренний класс для русификации объектов."""
-
-        verbose_name = 'Тег рецепта'
-        verbose_name_plural = 'Теги рецепта'
-        default_related_name = 'recipetag'
+        models.UniqueConstraint(
+            fields=('recipe', 'ingredient'),
+            name='unique_ingredientinrecipe')
 
 
 class Subscription(models.Model):
     """Модель подписки на пользователей."""
 
     user = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name='subscriber'
+        FoodgramUser, on_delete=models.CASCADE,
+        related_name='owner_subscriptions'
     )
-    subscription = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name='subscriptions'
+    recipe_author = models.ForeignKey(
+        FoodgramUser, on_delete=models.CASCADE,
+        related_name='author_subscriptions'
     )
 
     class Meta:
         """Класс для порядка сортировки."""
 
-        ordering = ('id',)
+        ordering = ('recipe_author',)
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
 
-        unique_together = ('user', 'subscription')
+        models.UniqueConstraint(
+            fields=['user', 'recipe_author'],
+            name='unique_subscription')
 
     def clean(self):
+        """Метод проверки подписки."""
         if self.user == self.subscription:
-            raise ValidationError("Вы подписываетесь на самого себя.")
+            raise ValidationError('Вы подписываетесь на самого себя.')
         return super().save(self)
 
 
-class Favorite(models.Model):
+class BaseModel(models.Model):
+    """Абстрактная модель для избранного и корзины."""
+
+    user = models.ForeignKey(
+        FoodgramUser, on_delete=models.CASCADE,
+    )
+    recipe = models.ForeignKey(
+        Recipe, on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        """Класс для порядка сортировки."""
+
+        abstract = True
+        ordering = ('recipe',)
+
+
+class Favorite(BaseModel):
     """Модель избранных рецептов."""
 
-    user = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name='reader'
-    )
-    recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, related_name='favorite_recipe'
-    )
-
     class Meta:
         """Класс для порядка сортировки."""
 
-        ordering = ('id',)
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
+        default_related_name = 'favorite_recipe'
 
-        unique_together = ('user', 'recipe')
+        models.UniqueConstraint(
+            fields=('user', 'recipe'),
+            name='unique_user_favorite_recipe')
 
 
-class ShoppingCart(models.Model):
+class ShoppingCart(BaseModel):
     """Модель корзины рецептов."""
-
-    user = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name='buyer'
-    )
-    recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, related_name='shopping_cart_recipe'
-    )
 
     class Meta:
         """Класс для порядка сортировки."""
 
-        ordering = ('id',)
         verbose_name = 'Корзина'
         verbose_name_plural = 'Корзина'
+        default_related_name = 'shopping_cart_recipe'
 
-        unique_together = ('user', 'recipe')
+        models.UniqueConstraint(
+            fields=('user', 'recipe'),
+            name='unique_user_shoppingcart_recipe')
