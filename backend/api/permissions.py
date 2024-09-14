@@ -9,4 +9,5 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         """Метод проверки является ли пользователь автором."""
         return (
             request.method in permissions.SAFE_METHODS
-            or obj.author == request.user)
+            or obj.author == request.user
+        )

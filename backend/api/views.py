@@ -1,13 +1,16 @@
 """Модуль представлений приложения."""
-from django.db.models import Count, F, Sum
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+import io
+
+from django.db.models import Count, Sum
+from django.http import FileResponse
+from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from rest_framework import status, viewsets
-from rest_framework.decorators import action, api_view
-from rest_framework.exceptions import NotFound
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.decorators import action
+from rest_framework.permissions import (IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 
 from .filters import IngredientFilter, RecipeFilter
@@ -18,8 +21,9 @@ from .serializers import (FavoriteRecipesSerializer, FoodgramUserSerializer,
                           RecipesSerializer, ShoppingCartSerializer,
                           SubscriptionPostSerializer,
                           SubscriptionGetSerializer, TagSerializer)
-from recipes.models import (Favorite, FoodgramUser, Ingredient, Recipe,
-                            ShoppingCart, Tag)
+from recipes.models import (Favorite, FoodgramUser, Ingredient,
+                            IngredientInRecipe,
+                            Recipe, ShoppingCart, Tag)
 
 
 class FoodgramUserViewSet(UserViewSet):
@@ -30,42 +34,36 @@ class FoodgramUserViewSet(UserViewSet):
     serializer_class = FoodgramUserSerializer
     pagination_class = RecipesPageNumberPagination
 
-    @action(detail=False, methods=['get'], url_path='me')
+    @action(detail=False, methods=('get',), url_path='me',
+            permission_classes=(IsAuthenticated,))
     def me(self, request):
         """Метод получения своих данных пользователем."""
-        if request.user.is_authenticated:
-            serializer = FoodgramUserSerializer(
-                get_object_or_404(FoodgramUser, id=request.user.id),
-                context={'request': request}
-            )
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(
-            {'detail': 'Authentication credentials were not provided.'},
-            status=status.HTTP_401_UNAUTHORIZED)
+        serializer = FoodgramUserSerializer(
+            get_object_or_404(FoodgramUser, id=request.user.id),
+            context={'request': request}
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['put'], url_path='me/avatar')
+    @action(detail=False, methods=('put',), url_path='me/avatar')
     def avatar(self, request, id=None):
         """Метод загрузки аватара пользователем."""
-        user = get_object_or_404(FoodgramUser, id=request.user.id)
+        user = request.user
         serializer = FoodgramUserSerializer(
             user, data=request.data, context={'request': request},
             partial=True,
         )
-        if serializer.is_valid() and 'avatar' in request.data:
-            serializer.save()
-            return Response({"avatar": serializer.data.get('avatar')},
-                            status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({'avatar': serializer.data.get('avatar')},
+                        status=status.HTTP_200_OK)
 
     @avatar.mapping.delete
     def delete_avatar(self, request, id=None):
         """Метод удаления аватара."""
-        user_avatar = get_object_or_404(
-            FoodgramUser, id=request.user.id).avatar
-        user_avatar.delete()
+        request.user.avatar.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True, methods=['post'], url_path='subscribe')
+    @action(detail=True, methods=('post',), url_path='subscribe')
     def subscribe(self, request, id=None):
         """Метод для создания подписки."""
         subscription = get_object_or_404(
@@ -73,69 +71,36 @@ class FoodgramUserViewSet(UserViewSet):
             id=self.kwargs.get('id')
         )
         serializer = SubscriptionPostSerializer(
-            data={'user': request.user,
-                  'recipe_author': subscription},
+            data={'user': request.user.id,
+                  'recipe_author': subscription.id},
             context={'request': request}
         )
-        if serializer.is_valid():
-            serializer.save(
-                user=request.user,
-                recipe_author=subscription
-            )
-            return Response(serializer.data,
-                            status=status.HTTP_201_CREATED)
-        return Response(serializer.errors,
-                        status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
     def delete_subscription(self, request, id=None):
         """Метод для удаления подписки."""
-        subscription = request.user.owner_subscriptions.filter(
-            recipe_author_id=self.kwargs.get('id'))
-        try:
-            FoodgramUser.objects.get(id=self.kwargs.get('id'))
-        except Exception:
-            raise NotFound(
-                detail="Такого автора не существует.",
-                code=404
-            )
-        if not subscription.exists():
+        subscription = get_object_or_404(
+            FoodgramUser, id=self.kwargs.get('id')
+            ).author_subscriptions.filter(user_id=request.user.id).delete()
+        if subscription[0] == 0:
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        subscription.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False, methods=['get'], url_path='subscriptions')
+    @action(detail=False, methods=('get',), url_path='subscriptions')
     def subscriptions(self, request):
         """Метод для вывода подписок."""
         queryset = FoodgramUser.objects.filter(
             author_subscriptions__user_id=request.user).order_by(
             'last_name').annotate(recipes_count=Count('recipes'))
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            if (request.query_params != {}
-               and 'limit' in request.query_params.keys()):
-                n = int(request.query_params.get('limit'))
-                serializer = SubscriptionGetSerializer(
-                    FoodgramUser.objects.filter(
-                        author_subscriptions__user_id=request.user).annotate(
-                        recipes_count=Count('recipes'))[:n],
-                    context={'request': request},
-                    many=True)
-                return self.get_paginated_response(serializer.data)
-            serializer = SubscriptionGetSerializer(
-                FoodgramUser.objects.filter(
-                    author_subscriptions__user_id=request.user).annotate(
-                    recipes_count=Count('recipes')),
+        n = int(request.query_params.get('limit', queryset.count()))
+        serializer = SubscriptionGetSerializer(
+                self.paginate_queryset(queryset[:n]),
                 context={'request': request},
                 many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = SubscriptionGetSerializer(
-            FoodgramUser.objects.filter(
-                author_subscriptions__user_id=request.user).annotate(
-                recipes_count=Count('recipes')),
-            context={'request': request},
-            many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return self.get_paginated_response(serializer.data)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -144,7 +109,6 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (IsAuthenticatedOrReadOnly,)
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    lookup_field = 'id'
     pagination_class = None
 
 
@@ -154,7 +118,6 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (IsAuthenticatedOrReadOnly,)
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    lookup_field = 'id'
     filter_backends = (DjangoFilterBackend,)
     filterset_class = IngredientFilter
     pagination_class = None
@@ -164,54 +127,50 @@ class RecipesViewSet(viewsets.ModelViewSet):
     """Класс представления тэгов."""
 
     permission_classes = (IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly)
-    queryset = Recipe.objects.all()
-    lookup_field = 'id'
+    queryset = Recipe.objects.select_related('author').prefetch_related(
+        'tags', 'ingredients')
+    lookup_field = 'id'  # Без этого поля придется переделать url_path actions
     pagination_class = RecipesPageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 
     def get_serializer_class(self):
         """Метод выбора сериализатора."""
-        if self.action in ('retrieve', 'list'):
+        if self.action in ('retrieve', 'list',):
             return RecipeGetSerializer
         return RecipesSerializer
 
-    @action(detail=True, methods=['get'], url_path='get-link')
+    @action(detail=True, methods=('get',), url_path='get-link')
     def get_link(self, request, *args, **kwargs):
         """Метод получения ссылки на рецепт."""
         short_link = get_object_or_404(
             Recipe, id=self.kwargs.get('id')).short_link
         return Response(
-            {'short-link': request.build_absolute_uri(f'/s/{short_link}')},
+            {'short-link': request.build_absolute_uri(
+                reverse('recipe_shortlinked_retreave', args=[short_link,]))},
             status=status.HTTP_200_OK
         )
 
-    def favorite_shoppingcart_creation(self, serializer, id):
+    def favorite_shoppingcart_creation(self, serializer, id=None):
         """Метод создания записи избранного и корзины."""
-        shopping_cart = {'user_id': self.request.user.id,
-                         'recipe_id': id}
+        shopping_cart = {'user': self.request.user.id,
+                         'recipe': id}
         serializer = serializer(data=shopping_cart,
                                 context={'request': self.request})
-        if serializer.is_valid():
-            serializer.save(
-                user_id=self.request.user.id,
-                recipe_id=id)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def favorite_shoppingcart_deletion(self, model, id=None):
         """Метод удаления записи из корзины и избранного."""
-        if not Recipe.objects.filter(id=id).exists():
-            return Response({'detail': 'Not found.'},
-                            status=status.HTTP_404_NOT_FOUND)
-        if model.objects.filter(user_id=self.request.user.id,
-                                recipe_id=id).exists():
-            model.objects.filter(user_id=self.request.user.id,
-                                 recipe_id=id).delete()
+        get_object_or_404(Recipe, id=id)
+        model_object = model.objects.filter(user_id=self.request.user.id,
+                                            recipe_id=id).delete()
+        if model_object[0] != 0:
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['post'], url_path='shopping_cart')
+    @action(detail=True, methods=('post',), url_path='shopping_cart')
     def shopping_cart(self, request, id=None):
         """Метод создания записи в корзине."""
         return self.favorite_shoppingcart_creation(
@@ -226,7 +185,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
             id=id
         )
 
-    @action(detail=True, methods=['post'], url_path='favorite')
+    @action(detail=True, methods=('post',), url_path='favorite')
     def favorite(self, request, id=None):
         """Метод создания записи в избранном."""
         return self.favorite_shoppingcart_creation(
@@ -241,34 +200,31 @@ class RecipesViewSet(viewsets.ModelViewSet):
             id=id
         )
 
-    @action(detail=False, methods=['get'], url_path='download_shopping_cart')
+    @staticmethod
+    def purchaselist_buffer_creation(purchase_list):
+        """Метод загрузки строк в буфер."""
+        buffer = io.BytesIO()
+        for purchase in purchase_list:
+            name = purchase['ingredient__name']
+            unit = purchase['ingredient__measurement_unit']
+            total_amount = purchase['total_amount']
+            buffer.write(f'{name} ({unit}) - {total_amount}\n'.encode('utf-8'))
+        return buffer
+
+    @action(detail=False, methods=('get',), url_path='download_shopping_cart')
     def get_purchase_list(self, request, *args, **kwargs):
         """Метод отправки файла со списком покупок."""
-        purchase_list = ShoppingCart.objects.filter(
-            user=request.user).order_by('recipe__ingredients__name').filter(
-                recipe__ingredients__name__exact=F('recipe__ingredients__name')
-        ).values(
-                'recipe__ingredients__name',
-                'recipe__ingredients__measurement_unit'
+        purchase_list = IngredientInRecipe.objects.filter(
+            recipe__shopping_cart_recipe__user=request.user).order_by(
+                'ingredient__name').values(
+                'ingredient__name',
+                'ingredient__measurement_unit'
         ).annotate(total_amount=Sum(
-            'recipe__ingredientinrecipe__amount'
+            'amount'
         ))
-        with open('shopping_list.txt', 'w') as file:
-            for purchase in purchase_list:
-                name = purchase["recipe__ingredients__name"]
-                unit = purchase["recipe__ingredients__measurement_unit"]
-                total_amount = purchase['total_amount']
-                file.write(f'{name} ({unit}) - {total_amount}\n')
-        data = open('shopping_list.txt', 'r')
-        response = HttpResponse(data, "application")
-        response['Content-Disposition'
-                 ] = "attachment; filename='shopping_list.txt'"
-        return response
-
-
-@api_view(['GET', ])
-def recipe_shortlinked_retreave(request):
-    """Функция возврата рецепта по короткой ссылке."""
-    recipe = get_object_or_404(Recipe,
-                               short_link=request.path_info.split('/')[2])
-    return redirect('recipes-detail', id=recipe.id)
+        buffer = self.purchaselist_buffer_creation(
+            purchase_list=purchase_list)
+        buffer.seek(0)
+        return FileResponse(
+            buffer, as_attachment=True, filename='shopping_list.txt'
+        )

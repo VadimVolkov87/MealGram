@@ -4,13 +4,15 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path, re_path
 
-from api import views
+from recipes.views import recipe_shortlinked_retreave
 
 urlpatterns = [
     path('api/', include('api.urls')),
     path('admin/', admin.site.urls),
-    re_path(r's/[\w]{5}', views.recipe_shortlinked_retreave,
-            name='recipe_shortlinked_retreave'),
+    path(r's/<slug:short_link>', recipe_shortlinked_retreave,
+         name='recipe_shortlinked_retreave'),
+#    re_path(r's/(?P<short_link>[\w]{5})', recipe_shortlinked_retreave,
+#            name='recipe_shortlinked_retreave'),
 ]
 
 if settings.DEBUG:

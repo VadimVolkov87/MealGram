@@ -19,19 +19,16 @@ class FoodgramUser(AbstractUser):
     """Пользовательская модель приложения."""
 
     USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name', 'password',)
 
     email = models.EmailField('Емейл', max_length=EMAIL_MAX_LENGTH,
-                              unique=True, blank=False)
-    first_name = models.CharField('Имя', max_length=NAME_MAX_LENGTH,
-                                  blank=False)
-    last_name = models.CharField('Фамилия', max_length=NAME_MAX_LENGTH,
-                                 blank=False)
+                              unique=True)
+    first_name = models.CharField('Имя', max_length=NAME_MAX_LENGTH)
+    last_name = models.CharField('Фамилия', max_length=NAME_MAX_LENGTH)
     avatar = models.ImageField(
         upload_to='avatar/images/',
         null=True,
         default=None)
-
-    REQUIRED_FIELDS = ('username', 'first_name', 'last_name', 'password',)
 
     class Meta:
         """Внутренний класс для сортировки объектов."""
@@ -81,9 +78,11 @@ class Ingredient(models.Model):
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
 
-        models.UniqueConstraint(
-            fields=('name', 'measurement_unit'),
-            name='unique_ingredient')
+        constraints = (
+            models.UniqueConstraint(
+             fields=('name', 'measurement_unit'),
+             name='unique_ingredient'),
+        )
 
     def __str__(self):
         """Метод возвращающий имя."""
@@ -101,7 +100,7 @@ class Recipe(models.Model):
     name = models.CharField('Название рецепта',
                             max_length=RECIPE_NAME_MAX_LENGTH)
     image = models.ImageField(
-        'Фото', upload_to='recipes/images/', default=None
+        'Фото', upload_to='recipes/images/',
     )
     text = models.TextField('Текст')
     ingredients = models.ManyToManyField(
@@ -113,16 +112,18 @@ class Recipe(models.Model):
     )
     cooking_time = models.PositiveSmallIntegerField(
         'Время приготовления',
-        validators=[
+        validators=(
             MinValueValidator(
                 MIN_VALIDATOR_VALUE,
-                message='Введенное количество не может быть меньше 1.'
+                message=(f'Введенное время не может быть меньше'
+                         f'{MIN_VALIDATOR_VALUE}.')
             ),
             MaxValueValidator(
                 MAX_VALIDATOR_VALUE,
-                message='Введенное количество не может быть больше 32767.'
+                message=(f'Введенное время не может быть больше'
+                         f'{MAX_VALIDATOR_VALUE}.')
             )
-        ]
+        )
     )
     published_at = models.DateTimeField(
         'Дата и время создания',
@@ -145,12 +146,10 @@ class Recipe(models.Model):
 
     def save(self, **kwargs):
         """Функция генерации короткой ссылки."""
-        if self.short_link != '':
-            super().save(**kwargs)
-        else:
+        if not self.short_link:
             self.short_link = ''.join(random.choice(
                 string.ascii_letters + string.digits) for _ in range(5))
-            super().save(**kwargs)
+        super().save(**kwargs)
 
 
 class IngredientInRecipe(models.Model):
@@ -164,16 +163,18 @@ class IngredientInRecipe(models.Model):
     )
     amount = models.PositiveSmallIntegerField(
         'Количество',
-        validators=[
+        validators=(
             MinValueValidator(
                 MIN_VALIDATOR_VALUE,
-                message='Введенное количество не может быть меньше 1.'
+                message=(f'Введенное количество не может быть меньше'
+                         f'{MIN_VALIDATOR_VALUE}.')
             ),
             MaxValueValidator(
                 MAX_VALIDATOR_VALUE,
-                message='Введенное количество не может быть больше 32767.'
+                message=(f'Введенное количество не может быть больше'
+                         f'{MAX_VALIDATOR_VALUE}.')
             )
-        ]
+        )
     )
 
     class Meta:
@@ -183,9 +184,15 @@ class IngredientInRecipe(models.Model):
         verbose_name_plural = 'Ингредиенты в рецепте'
         default_related_name = 'ingredientinrecipe'
 
-        models.UniqueConstraint(
-            fields=('recipe', 'ingredient'),
-            name='unique_ingredientinrecipe')
+        constraints = (
+            models.UniqueConstraint(
+             fields=('recipe', 'ingredient'),
+             name='unique_ingredientinrecipe'),
+        )
+
+    def __str__(self):
+        """Метод возвращающий имя."""
+        return self.ingredient.name
 
 
 class Subscription(models.Model):
@@ -207,15 +214,21 @@ class Subscription(models.Model):
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
 
-        models.UniqueConstraint(
-            fields=['user', 'recipe_author'],
-            name='unique_subscription')
+        constraints = (
+            models.UniqueConstraint(
+             fields=['user', 'recipe_author'],
+             name='unique_subscription'),
+        )
 
     def clean(self):
         """Метод проверки подписки."""
         if self.user == self.subscription:
             raise ValidationError('Вы подписываетесь на самого себя.')
         return super().save(self)
+
+    def __str__(self):
+        """Метод возвращающий имя."""
+        return self.recipe_author.username
 
 
 class BaseModel(models.Model):
@@ -245,9 +258,15 @@ class Favorite(BaseModel):
         verbose_name_plural = 'Избранное'
         default_related_name = 'favorite_recipe'
 
-        models.UniqueConstraint(
-            fields=('user', 'recipe'),
-            name='unique_user_favorite_recipe')
+        constraints = (
+            models.UniqueConstraint(
+             fields=('user', 'recipe'),
+             name='unique_user_favorite_recipe'),
+        )
+
+    def __str__(self):
+        """Метод возвращающий имя."""
+        return self.recipe.name
 
 
 class ShoppingCart(BaseModel):
@@ -260,6 +279,12 @@ class ShoppingCart(BaseModel):
         verbose_name_plural = 'Корзина'
         default_related_name = 'shopping_cart_recipe'
 
-        models.UniqueConstraint(
-            fields=('user', 'recipe'),
-            name='unique_user_shoppingcart_recipe')
+        constraints = (
+            models.UniqueConstraint(
+             fields=('user', 'recipe'),
+             name='unique_user_shoppingcart_recipe'),
+        )
+
+    def __str__(self):
+        """Метод возвращающий имя."""
+        return self.recipe.name

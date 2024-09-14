@@ -26,7 +26,7 @@ class UsersAdmin(UserAdmin):
 
     list_display = ('id', 'username', 'email', 'first_name', 'last_name',
                     'avatar', 'is_superuser',
-                    'is_staff',)
+                    'is_staff', 'get_count_recipes', 'get_count_subscribers',)
     list_editable = ('username', 'email', 'first_name', 'last_name',
                      'avatar', 'is_superuser', 'is_staff',)
     ordering = ('username',)
@@ -34,6 +34,16 @@ class UsersAdmin(UserAdmin):
     search_fields = ('username', 'email', 'first_name',)
     list_display_links = ('id',)
     empty_value_display = 'Не задано'
+
+    @admin.display(description='к-во рецептов')
+    def get_count_recipes(self, object):
+        """Метод получения количества рецептов."""
+        return object.recipes.all().count()
+
+    @admin.display(description='к-во подписчиков')
+    def get_count_subscribers(self, object):
+        """Метод получения количества подписчиков."""
+        return object.owner_subscriptions.all().count()
 
 
 @admin.register(Tag)
@@ -75,10 +85,9 @@ class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('name', 'author',)
     list_filter = ('author', 'tags',)
     empty_value_display = 'Не задано'
-    inlines = [
+    inlines = (
         RecipeIngredientInline,
-
-    ]
+    )
 
     @admin.display(description='в избранном')
     def get_count_is_favorited(self, object):
@@ -88,14 +97,14 @@ class RecipeAdmin(admin.ModelAdmin):
     @admin.display(description='теги')
     def get_tags(self, object):
         """Метод получения тегов."""
-        return ',\n'.join((tags.name for tags in object.tags.all()))
+        return ',\n'.join(tags.name for tags in object.tags.all())
 
     @admin.display(description='ингредиенты')
     def get_ingredients(self, object):
         """Метод получения ингредиентов."""
-        return ',\n'.join((
+        return ',\n'.join(
             ingredients.name for ingredients in object.ingredients.all()
-        ))
+        )
 
     @admin.display(description='картинка')
     def get_image(self, object):
