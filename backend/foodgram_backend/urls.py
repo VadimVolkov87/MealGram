@@ -2,7 +2,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path, re_path
+from django.urls import include, path
 
 from recipes.views import recipe_shortlinked_retreave
 
@@ -11,8 +11,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path(r's/<slug:short_link>', recipe_shortlinked_retreave,
          name='recipe_shortlinked_retreave'),
-#    re_path(r's/(?P<short_link>[\w]{5})', recipe_shortlinked_retreave,
-#            name='recipe_shortlinked_retreave'),
 ]
 
 if settings.DEBUG:

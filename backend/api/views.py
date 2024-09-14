@@ -84,7 +84,7 @@ class FoodgramUserViewSet(UserViewSet):
         """Метод для удаления подписки."""
         subscription = get_object_or_404(
             FoodgramUser, id=self.kwargs.get('id')
-            ).author_subscriptions.filter(user_id=request.user.id).delete()
+        ).author_subscriptions.filter(user_id=request.user.id).delete()
         if subscription[0] == 0:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -97,9 +97,10 @@ class FoodgramUserViewSet(UserViewSet):
             'last_name').annotate(recipes_count=Count('recipes'))
         n = int(request.query_params.get('limit', queryset.count()))
         serializer = SubscriptionGetSerializer(
-                self.paginate_queryset(queryset[:n]),
-                context={'request': request},
-                many=True)
+            self.paginate_queryset(queryset[:n]),
+            context={'request': request},
+            many=True
+        )
         return self.get_paginated_response(serializer.data)
 
 
@@ -147,7 +148,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
             Recipe, id=self.kwargs.get('id')).short_link
         return Response(
             {'short-link': request.build_absolute_uri(
-                reverse('recipe_shortlinked_retreave', args=[short_link,]))},
+                reverse('recipe_shortlinked_retreave', args=[short_link, ]))},
             status=status.HTTP_200_OK
         )
 

@@ -142,7 +142,7 @@ class SubscriptionGetSerializer(FoodgramUserSerializer):
         fields: Tuple = ('id', 'username', 'first_name', 'last_name', 'email',
                          'is_subscribed', 'avatar', ) + (
                              'recipes_count', 'recipes',
-                             )
+        )
 
         model = FoodgramUser
         read_only_fields = ('id', ) + ('recipes_count', 'recipes', )
@@ -264,7 +264,8 @@ class RecipesSerializer(serializers.ModelSerializer):
         """Метод валидации тегов."""
         if list(set(value)) != value:
             raise serializers.ValidationError(
-                    {'tags': 'Вы выбрали повторяющиеся теги.'})
+                {'tags': 'Вы выбрали повторяющиеся теги.'}
+            )
         return value
 
     def validate_ingredients(self, value):
@@ -272,7 +273,8 @@ class RecipesSerializer(serializers.ModelSerializer):
         ingredients_list = [ingredient.get('id') for ingredient in value]
         if len(set(ingredients_list)) != len(ingredients_list):
             raise serializers.ValidationError(
-                    {'ingredients': 'Вы выбрали повторяющиеся ингредиенты.'})
+                {'ingredients': 'Вы выбрали повторяющиеся ингредиенты.'}
+            )
         return value
 
     def validate(self, data):

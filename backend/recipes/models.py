@@ -80,8 +80,8 @@ class Ingredient(models.Model):
 
         constraints = (
             models.UniqueConstraint(
-             fields=('name', 'measurement_unit'),
-             name='unique_ingredient'),
+                fields=('name', 'measurement_unit'),
+                name='unique_ingredient'),
         )
 
     def __str__(self):
@@ -186,8 +186,8 @@ class IngredientInRecipe(models.Model):
 
         constraints = (
             models.UniqueConstraint(
-             fields=('recipe', 'ingredient'),
-             name='unique_ingredientinrecipe'),
+                fields=('recipe', 'ingredient'),
+                name='unique_ingredientinrecipe'),
         )
 
     def __str__(self):
@@ -216,8 +216,8 @@ class Subscription(models.Model):
 
         constraints = (
             models.UniqueConstraint(
-             fields=['user', 'recipe_author'],
-             name='unique_subscription'),
+                fields=['user', 'recipe_author'],
+                name='unique_subscription'),
         )
 
     def clean(self):
@@ -260,8 +260,8 @@ class Favorite(BaseModel):
 
         constraints = (
             models.UniqueConstraint(
-             fields=('user', 'recipe'),
-             name='unique_user_favorite_recipe'),
+                fields=('user', 'recipe'),
+                name='unique_user_favorite_recipe'),
         )
 
     def __str__(self):
@@ -281,8 +281,8 @@ class ShoppingCart(BaseModel):
 
         constraints = (
             models.UniqueConstraint(
-             fields=('user', 'recipe'),
-             name='unique_user_shoppingcart_recipe'),
+                fields=('user', 'recipe'),
+                name='unique_user_shoppingcart_recipe'),
         )
 
     def __str__(self):
