@@ -32,7 +32,7 @@ class FoodgramUserSerializer(UserSerializer):
         request = self.context.get('request')
         return (request.user.is_authenticated
                 and obj.author_subscriptions.filter(
-                 user_id=request.user).exists())
+                    user_id=request.user).exists())
 
     def validate(self, data):  # Та же история , что и с картинкой рецептов.
         """Метод валидации количества."""  # Поле есть но пустое.
@@ -139,7 +139,7 @@ class SubscriptionGetSerializer(FoodgramUserSerializer):
 
         model = FoodgramUser
         fields = FoodgramUserSerializer.Meta.fields + (
-                             'recipes_count', 'recipes',
+                'recipes_count', 'recipes',
         )
         read_only_fields = ('id', ) + ('recipes_count', 'recipes', )
 

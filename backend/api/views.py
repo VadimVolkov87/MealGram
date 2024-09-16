@@ -226,6 +226,6 @@ class RecipesViewSet(viewsets.ModelViewSet):
             'amount'
         ))
         return FileResponse(self.purchaselist_buffer_creation(
-                purchase_list=purchase_list), as_attachment=True,
-                filename='shopping_list.txt'
+            purchase_list=purchase_list), as_attachment=True,
+            filename='shopping_list.txt'
         )
