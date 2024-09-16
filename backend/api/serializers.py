@@ -139,7 +139,7 @@ class SubscriptionGetSerializer(FoodgramUserSerializer):
 
         model = FoodgramUser
         fields = FoodgramUserSerializer.Meta.fields + (
-                'recipes_count', 'recipes',
+            'recipes_count', 'recipes',
         )
         read_only_fields = ('id', ) + ('recipes_count', 'recipes', )
 
