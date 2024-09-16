@@ -1,10 +1,9 @@
 """Модуль сериализаторов приложения."""
-from typing import Tuple
-
 from djoser.serializers import UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
+from recipes.constants import MAX_VALIDATOR_VALUE, MIN_VALIDATOR_VALUE
 from recipes.models import (Favorite, FoodgramUser, Ingredient,
                             IngredientInRecipe, Recipe,
                             ShoppingCart, Subscription, Tag)
@@ -13,7 +12,7 @@ from recipes.models import (Favorite, FoodgramUser, Ingredient,
 class FoodgramUserSerializer(UserSerializer):
     """Класс сериализатора для пользователя."""
 
-    avatar = Base64ImageField(required=False, allow_null=True)
+    avatar = Base64ImageField()
     is_subscribed = serializers.SerializerMethodField(
         read_only=True,
     )
@@ -26,22 +25,21 @@ class FoodgramUserSerializer(UserSerializer):
         """
 
         model = FoodgramUser
-        fields = ('id', 'username', 'first_name', 'last_name',
-                  'email', ) + ('is_subscribed', 'avatar', )
+        fields = UserSerializer.Meta.fields + ('is_subscribed', 'avatar', )
 
     def get_is_subscribed(self, obj):
         """Метод проверки подписки пользователя."""
-        return (self.context.setdefault(
-            'request').user.is_authenticated
-            and obj.author_subscriptions.filter(
-                user_id=self.context.setdefault('request').user).exists())
+        request = self.context.get('request')
+        return (request.user.is_authenticated
+                and obj.author_subscriptions.filter(
+                 user_id=request.user).exists())
 
-    def validate(self, data):
-        """Метод валидации количества."""
-        if data == {}:
+    def validate(self, data):  # Та же история , что и с картинкой рецептов.
+        """Метод валидации количества."""  # Поле есть но пустое.
+        if data == {}:  # Без метода не ловится.
             raise serializers.ValidationError(
                 'Поле аватара не может быть пустым.',
-                code=404
+                code=400
             )
         return data
 
@@ -117,16 +115,16 @@ class RecipeGetSerializer(serializers.ModelSerializer):
 
     def get_is_favorited(self, obj):
         """Метод определения находится ли рецепт в избранном."""
-        return (self.context.setdefault('request').user.is_authenticated
-                and self.context.setdefault(
-                    'request').user.favorite_recipe.filter(
+        request = self.context.get('request')
+        return (request.user.is_authenticated
+                and request.user.favorite_recipe.filter(
                     recipe_id=obj.id).exists())
 
     def get_is_in_shopping_cart(self, obj):
         """Метод определения находится ли рецепт в корзине."""
-        return (self.context.setdefault('request').user.is_authenticated
-                and self.context.setdefault(
-                    'request').user.shopping_cart_recipe.filter(
+        request = self.context.get('request')
+        return (request.user.is_authenticated
+                and request.user.shopping_cart_recipe.filter(
                     recipe_id=obj.id).exists())
 
 
@@ -139,20 +137,21 @@ class SubscriptionGetSerializer(FoodgramUserSerializer):
     class Meta(FoodgramUserSerializer.Meta):
         """Внутренний класс сериализатора для модели и отображаемых полей."""
 
-        fields: Tuple = ('id', 'username', 'first_name', 'last_name', 'email',
-                         'is_subscribed', 'avatar', ) + (
+        model = FoodgramUser
+        fields = FoodgramUserSerializer.Meta.fields + (
                              'recipes_count', 'recipes',
         )
-
-        model = FoodgramUser
         read_only_fields = ('id', ) + ('recipes_count', 'recipes', )
 
     def get_recipes(self, obj):
         """Метод получения рецептов."""
         recipes_list = obj.recipes.all()
-        n = self.context.setdefault('request').query_params.get(
-            'recipes_limit', recipes_list.count())
-        instance = recipes_list[:int(n)]
+        try:
+            recipes_limit = int(self.context.get('request').query_params.get(
+                'recipes_limit'))
+        except (ValueError, TypeError):
+            recipes_limit = None
+        instance = recipes_list[:recipes_limit]
         return RecipeGetShortSerializer(
             instance=instance, context=self.context,
             many=True
@@ -223,7 +222,8 @@ class IngredientInRecipeShortSerializer(serializers.ModelSerializer):
     """Короткий сериализатор модели."""
 
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all(),)
-    amount = serializers.IntegerField(min_value=1, max_value=32767)
+    amount = serializers.IntegerField(min_value=MIN_VALIDATOR_VALUE,
+                                      max_value=MAX_VALIDATOR_VALUE)
 
     class Meta:
         """Класс сериализатора для определения модели и отображаемых полей."""
@@ -256,7 +256,7 @@ class RecipesSerializer(serializers.ModelSerializer):
 
     def validate_image(self, value):
         """Метод валидации картинки."""
-        if value is None:
+        if not value:
             raise serializers.ValidationError('Выберите картинку.')
         return value
 
@@ -278,7 +278,7 @@ class RecipesSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
-        """Метод для проверки наличия поля."""  # Без метода выдает ошибку 500.
+        """Метод для проверки наличия поля."""
         if 'ingredients' not in data.keys():
             raise serializers.ValidationError('Требуется ввести ингредиенты.')
         if 'tags' not in data.keys():

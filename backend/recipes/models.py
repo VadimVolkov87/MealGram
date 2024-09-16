@@ -19,7 +19,7 @@ class FoodgramUser(AbstractUser):
     """Пользовательская модель приложения."""
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ('username', 'first_name', 'last_name', 'password',)
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name',)
 
     email = models.EmailField('Емейл', max_length=EMAIL_MAX_LENGTH,
                               unique=True)
@@ -28,7 +28,8 @@ class FoodgramUser(AbstractUser):
     avatar = models.ImageField(
         upload_to='avatar/images/',
         null=True,
-        default=None)
+        default=None
+    )
 
     class Meta:
         """Внутренний класс для сортировки объектов."""
@@ -192,7 +193,7 @@ class IngredientInRecipe(models.Model):
 
     def __str__(self):
         """Метод возвращающий имя."""
-        return self.ingredient.name
+        return f'{self.ingredient.name} + {self.ingredient.measurement_unit}'
 
 
 class Subscription(models.Model):
@@ -231,7 +232,7 @@ class Subscription(models.Model):
         return self.recipe_author.username
 
 
-class BaseModel(models.Model):
+class UserRecipeModel(models.Model):
     """Абстрактная модель для избранного и корзины."""
 
     user = models.ForeignKey(
@@ -247,8 +248,12 @@ class BaseModel(models.Model):
         abstract = True
         ordering = ('recipe',)
 
+    def __str__(self):
+        """Метод возвращающий имя."""
+        return f'{self.recipe.name} + {self._meta.verbose_name}'
 
-class Favorite(BaseModel):
+
+class Favorite(UserRecipeModel):
     """Модель избранных рецептов."""
 
     class Meta:
@@ -264,12 +269,8 @@ class Favorite(BaseModel):
                 name='unique_user_favorite_recipe'),
         )
 
-    def __str__(self):
-        """Метод возвращающий имя."""
-        return self.recipe.name
 
-
-class ShoppingCart(BaseModel):
+class ShoppingCart(UserRecipeModel):
     """Модель корзины рецептов."""
 
     class Meta:
@@ -284,7 +285,3 @@ class ShoppingCart(BaseModel):
                 fields=('user', 'recipe'),
                 name='unique_user_shoppingcart_recipe'),
         )
-
-    def __str__(self):
-        """Метод возвращающий имя."""
-        return self.recipe.name

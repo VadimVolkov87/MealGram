@@ -9,7 +9,7 @@ from recipes.views import recipe_shortlinked_retreave
 urlpatterns = [
     path('api/', include('api.urls')),
     path('admin/', admin.site.urls),
-    path(r's/<slug:short_link>', recipe_shortlinked_retreave,
+    path(r's/<slug:slug>', recipe_shortlinked_retreave,
          name='recipe_shortlinked_retreave'),
 ]
 

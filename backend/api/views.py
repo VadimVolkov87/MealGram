@@ -1,6 +1,4 @@
 """Модуль представлений приложения."""
-import io
-
 from django.db.models import Count, Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
@@ -29,7 +27,7 @@ from recipes.models import (Favorite, FoodgramUser, Ingredient,
 class FoodgramUserViewSet(UserViewSet):
     """Класс представления CustomUserViewSet."""
 
-    permission_classes = (IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
     queryset = FoodgramUser.objects.all()
     serializer_class = FoodgramUserSerializer
     pagination_class = RecipesPageNumberPagination
@@ -39,7 +37,7 @@ class FoodgramUserViewSet(UserViewSet):
     def me(self, request):
         """Метод получения своих данных пользователем."""
         serializer = FoodgramUserSerializer(
-            get_object_or_404(FoodgramUser, id=request.user.id),
+            FoodgramUser.objects.get(id=request.user.id),
             context={'request': request}
         )
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -85,7 +83,8 @@ class FoodgramUserViewSet(UserViewSet):
         subscription = get_object_or_404(
             FoodgramUser, id=self.kwargs.get('id')
         ).author_subscriptions.filter(user_id=request.user.id).delete()
-        if subscription[0] == 0:
+        first, second = subscription
+        if not second:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -95,9 +94,8 @@ class FoodgramUserViewSet(UserViewSet):
         queryset = FoodgramUser.objects.filter(
             author_subscriptions__user_id=request.user).order_by(
             'last_name').annotate(recipes_count=Count('recipes'))
-        n = int(request.query_params.get('limit', queryset.count()))
         serializer = SubscriptionGetSerializer(
-            self.paginate_queryset(queryset[:n]),
+            self.paginate_queryset(queryset),
             context={'request': request},
             many=True
         )
@@ -130,7 +128,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly)
     queryset = Recipe.objects.select_related('author').prefetch_related(
         'tags', 'ingredients')
-    lookup_field = 'id'  # Без этого поля придется переделать url_path actions
+    lookup_field = 'id'
     pagination_class = RecipesPageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
@@ -148,7 +146,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
             Recipe, id=self.kwargs.get('id')).short_link
         return Response(
             {'short-link': request.build_absolute_uri(
-                reverse('recipe_shortlinked_retreave', args=[short_link, ]))},
+                reverse('recipe_shortlinked_retreave', args=(short_link, )))},
             status=status.HTTP_200_OK
         )
 
@@ -165,18 +163,21 @@ class RecipesViewSet(viewsets.ModelViewSet):
     def favorite_shoppingcart_deletion(self, model, id=None):
         """Метод удаления записи из корзины и избранного."""
         get_object_or_404(Recipe, id=id)
-        model_object = model.objects.filter(user_id=self.request.user.id,
-                                            recipe_id=id).delete()
-        if model_object[0] != 0:
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        favorite_shoppingcart_object = model.objects.filter(
+            user_id=self.request.user.id, recipe_id=id
+        ).delete()
+        first, second = favorite_shoppingcart_object
+        if not second:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=('post',), url_path='shopping_cart')
     def shopping_cart(self, request, id=None):
         """Метод создания записи в корзине."""
         return self.favorite_shoppingcart_creation(
             serializer=ShoppingCartSerializer,
-            id=id)
+            id=id
+        )
 
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, id=None):
@@ -191,7 +192,8 @@ class RecipesViewSet(viewsets.ModelViewSet):
         """Метод создания записи в избранном."""
         return self.favorite_shoppingcart_creation(
             serializer=FavoriteRecipesSerializer,
-            id=id)
+            id=id
+        )
 
     @favorite.mapping.delete
     def delete_favorite(self, request, id=None):
@@ -204,12 +206,12 @@ class RecipesViewSet(viewsets.ModelViewSet):
     @staticmethod
     def purchaselist_buffer_creation(purchase_list):
         """Метод загрузки строк в буфер."""
-        buffer = io.BytesIO()
+        buffer = ''
         for purchase in purchase_list:
             name = purchase['ingredient__name']
             unit = purchase['ingredient__measurement_unit']
             total_amount = purchase['total_amount']
-            buffer.write(f'{name} ({unit}) - {total_amount}\n'.encode('utf-8'))
+            buffer += f'{name} ({unit}) - {total_amount},\n'
         return buffer
 
     @action(detail=False, methods=('get',), url_path='download_shopping_cart')
@@ -223,9 +225,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
         ).annotate(total_amount=Sum(
             'amount'
         ))
-        buffer = self.purchaselist_buffer_creation(
-            purchase_list=purchase_list)
-        buffer.seek(0)
-        return FileResponse(
-            buffer, as_attachment=True, filename='shopping_list.txt'
+        return FileResponse(self.purchaselist_buffer_creation(
+                purchase_list=purchase_list), as_attachment=True,
+                filename='shopping_list.txt'
         )
