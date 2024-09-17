@@ -118,7 +118,8 @@ class RecipeGetSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         return (request.user.is_authenticated
                 and request.user.favorite_recipe.filter(
-                    recipe_id=obj.id).exists())
+                    recipe_id=obj.id
+                ).exists())
 
     def get_is_in_shopping_cart(self, obj):
         """Метод определения находится ли рецепт в корзине."""
@@ -141,13 +142,13 @@ class SubscriptionGetSerializer(FoodgramUserSerializer):
         fields = FoodgramUserSerializer.Meta.fields + (
             'recipes_count', 'recipes',
         )
-        read_only_fields = ('id', ) + ('recipes_count', 'recipes', )
+        read_only_fields = ('id', 'recipes_count', 'recipes', )
 
     def get_recipes(self, obj):
         """Метод получения рецептов."""
         recipes_list = obj.recipes.all()
         try:
-            recipes_limit = int(self.context.get('request').query_params.get(
+            recipes_limit = int(self.context['request'].query_params.get(
                 'recipes_limit'))
         except (ValueError, TypeError):
             recipes_limit = None

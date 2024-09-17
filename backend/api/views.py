@@ -37,7 +37,7 @@ class FoodgramUserViewSet(UserViewSet):
     def me(self, request):
         """Метод получения своих данных пользователем."""
         serializer = FoodgramUserSerializer(
-            FoodgramUser.objects.get(id=request.user.id),
+            request.user,
             context={'request': request}
         )
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -80,11 +80,10 @@ class FoodgramUserViewSet(UserViewSet):
     @subscribe.mapping.delete
     def delete_subscription(self, request, id=None):
         """Метод для удаления подписки."""
-        subscription = get_object_or_404(
+        score, *subscription = get_object_or_404(
             FoodgramUser, id=self.kwargs.get('id')
         ).author_subscriptions.filter(user_id=request.user.id).delete()
-        first, second = subscription
-        if not second:
+        if not score:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -163,11 +162,10 @@ class RecipesViewSet(viewsets.ModelViewSet):
     def favorite_shoppingcart_deletion(self, model, id=None):
         """Метод удаления записи из корзины и избранного."""
         get_object_or_404(Recipe, id=id)
-        favorite_shoppingcart_object = model.objects.filter(
+        score, *favorite_shoppingcart_object = model.objects.filter(
             user_id=self.request.user.id, recipe_id=id
         ).delete()
-        first, second = favorite_shoppingcart_object
-        if not second:
+        if not score:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
