@@ -56,7 +56,7 @@ git push
 Вадим Волков - разработка
 
 ```text
-https://github.com/VadimVolkov87/kittygram_final
+https://github.com/VadimVolkov87/foodgram
 ```
 
 Евгений Салахутдинов - код-ревью

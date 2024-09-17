@@ -149,7 +149,8 @@ class SubscriptionGetSerializer(FoodgramUserSerializer):
         recipes_list = obj.recipes.all()
         try:
             recipes_limit = int(self.context['request'].query_params.get(
-                'recipes_limit'))
+                'recipes_limit'
+            ))
         except (ValueError, TypeError):
             recipes_limit = None
         instance = recipes_list[:recipes_limit]
