@@ -122,7 +122,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RecipesViewSet(viewsets.ModelViewSet):
-    """Класс представления тэгов."""
+    """Класс создания рецептов."""
 
     permission_classes = (IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly)
     queryset = Recipe.objects.select_related('author').prefetch_related(
