@@ -102,7 +102,7 @@ class FoodgramUserViewSet(UserViewSet):
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
-    """Класс представления тэгов."""
+    """Класс представления тегов."""
 
     permission_classes = (IsAuthenticatedOrReadOnly,)
     queryset = Tag.objects.all()
