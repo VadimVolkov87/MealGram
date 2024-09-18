@@ -35,7 +35,7 @@ class FoodgramUserSerializer(UserSerializer):
                     user_id=request.user).exists())
 
     def validate(self, data):
-        """Метод валидации количества."""  # Поле есть но пустое.
+        """Метод валидации количества."""
         if data == {}:  # Без метода не ловится.
             raise serializers.ValidationError(
                 'Поле аватара не может быть пустым.',
