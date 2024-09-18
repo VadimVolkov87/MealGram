@@ -34,7 +34,7 @@ class FoodgramUserSerializer(UserSerializer):
                 and obj.author_subscriptions.filter(
                     user_id=request.user).exists())
 
-    def validate(self, data):  # Та же история , что и с картинкой рецептов.
+    def validate(self, data):
         """Метод валидации количества."""  # Поле есть но пустое.
         if data == {}:  # Без метода не ловится.
             raise serializers.ValidationError(
