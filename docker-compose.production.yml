@@ -1,4 +1,4 @@
-version: '3'
+version: '3.3'
 
 volumes:
   pg_data:
@@ -33,6 +33,11 @@ services:
     command: cp -r /app/build/. /static/
     volumes:
       - static:/static
+  frontend_docs: 
+    image: adyval/foodgram_front 
+    env_file: .env 
+    volumes: 
+      - ./frontend/:/app/result_build/
   gateway:
     image: adyval/foodgram_gateway
     env_file: .env
@@ -41,5 +46,7 @@ services:
     volumes:
       - static:/static
       - media:/media
+      - ./frontend/build:/usr/share/nginx/html/
+      - ./docs/:/usr/share/nginx/html/api/docs/
     depends_on:
       - backend
