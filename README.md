@@ -36,8 +36,9 @@ git clone https://github.com/VadimVolkov87/foodgram.git
 
 Внести в Actions secrets следующие переменные:
 
-* DOCKER_USERNAME - логин для Docker
-* DOCKER_PASSWORD - пароль аккаунта Docker
+* DOCKER_USERNAME - логин для DockerHub
+* DOCKER_PASSWORD - пароль аккаунта DockerHub
+* USERNAME - ваш username на DockerHub
 * HOST - ip сервера
 * USER - логин на сервере
 * SSH_KEY - закрытый SSH-ключ к аккаунту на сервере
