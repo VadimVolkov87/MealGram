@@ -1,6 +1,5 @@
 frontend/node_modules
-infra/frontend/build
-.env
+#infra/frontend/build
 
 
 # Byte-compiled / optimized / DLL files
@@ -74,7 +73,7 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+#docs/_build/
 
 # PyBuilder
 target/
