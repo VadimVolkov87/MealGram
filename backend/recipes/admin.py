@@ -8,10 +8,6 @@ from .models import (Favorite, FoodgramUser, Ingredient, Recipe,
 
 OBJECTS_PER_PAGE = 10
 
-UserAdmin.fieldsets += (
-    ('Extra Fields', {'fields': ('avatar', 'is_subscribed',)}),
-)
-
 
 class RecipeIngredientInline(admin.StackedInline):
     """Класс установки внесения ингредиентов в модель Pecipe."""
@@ -33,8 +29,10 @@ class UsersAdmin(UserAdmin):
     list_per_page = OBJECTS_PER_PAGE
     search_fields = ('username', 'email', 'first_name',)
     list_display_links = ('id',)
-    exclude = ('is_subscribed',)
     empty_value_display = 'Не задано'
+    UserAdmin.fieldsets += (
+        ('Extra Fields', {'fields': ('avatar',)}),
+    )
 
     @admin.display(description='к-во рецептов')
     def get_count_recipes(self, object):
