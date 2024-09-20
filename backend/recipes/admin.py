@@ -9,7 +9,7 @@ from .models import (Favorite, FoodgramUser, Ingredient, Recipe,
 OBJECTS_PER_PAGE = 10
 
 UserAdmin.fieldsets += (
-    ('Extra Fields', {'fields': ('avatar',)}),
+    ('Extra Fields', {'fields': ('avatar', 'is_subscribed',)}),
 )
 
 
@@ -25,7 +25,7 @@ class UsersAdmin(UserAdmin):
     """Класс настройки отображения раздела пользователей."""
 
     list_display = ('id', 'username', 'email', 'first_name', 'last_name',
-                    'avatar', 'is_superuser',
+                    'avatar', 'is_superuser', 'is_subscribed',
                     'is_staff', 'get_count_recipes', 'get_count_subscribers',)
     list_editable = ('username', 'email', 'first_name', 'last_name',
                      'avatar', 'is_superuser', 'is_staff',)
@@ -44,6 +44,14 @@ class UsersAdmin(UserAdmin):
     def get_count_subscribers(self, object):
         """Метод получения количества подписчиков."""
         return object.owner_subscriptions.all().count()
+
+    @admin.display(description='is_subscribed')
+    def is_subscribed(self, object):
+        """Метод получения количества подписчиков."""
+        request = self.context.get('request')
+        return (request.user.is_authenticated
+                and object.author_subscriptions.filter(
+                    user_id=request.user).exists())
 
 
 @admin.register(Tag)
