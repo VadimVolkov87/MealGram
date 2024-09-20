@@ -25,7 +25,7 @@ class UsersAdmin(UserAdmin):
     """Класс настройки отображения раздела пользователей."""
 
     list_display = ('id', 'username', 'email', 'first_name', 'last_name',
-                    'avatar', 'is_superuser', 'is_subscribed',
+                    'avatar', 'is_superuser',
                     'is_staff', 'get_count_recipes', 'get_count_subscribers',)
     list_editable = ('username', 'email', 'first_name', 'last_name',
                      'avatar', 'is_superuser', 'is_staff',)
@@ -33,6 +33,7 @@ class UsersAdmin(UserAdmin):
     list_per_page = OBJECTS_PER_PAGE
     search_fields = ('username', 'email', 'first_name',)
     list_display_links = ('id',)
+    exclude = ('is_subscribed',)
     empty_value_display = 'Не задано'
 
     @admin.display(description='к-во рецептов')
@@ -44,14 +45,6 @@ class UsersAdmin(UserAdmin):
     def get_count_subscribers(self, object):
         """Метод получения количества подписчиков."""
         return object.owner_subscriptions.all().count()
-
-    @admin.display(description='is_subscribed')
-    def is_subscribed(self, object):
-        """Метод получения количества подписчиков."""
-        request = self.context.get('request')
-        return (request.user.is_authenticated
-                and object.author_subscriptions.filter(
-                    user_id=request.user).exists())
 
 
 @admin.register(Tag)
