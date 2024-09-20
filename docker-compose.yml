@@ -27,12 +27,12 @@ services:
       - static:/static/
   frontend_docs: 
     container_name: foodgram-front 
-    build: ./frontend/ 
+    build: ./frontend/
     volumes: 
       - ./frontend/:/app/result_build/
   gateway:
-    build: ./nginx/
     env_file: .env
+    build: ./nginx/
     ports:
       - 9000:80
     volumes:
