@@ -47,6 +47,6 @@ services:
       - static:/static
       - media:/media
       - ./frontend/build:/usr/share/nginx/html/
-      - ../docs/:/usr/share/nginx/html/api/docs/
+      - ./docs/:/usr/share/nginx/html/api/docs/
     depends_on:
       - backend

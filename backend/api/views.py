@@ -1,4 +1,4 @@
-"""Модуль представлений приложения."""
+"""Модуль представлений приложения api."""
 from django.db.models import Count, Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
