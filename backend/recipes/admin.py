@@ -9,7 +9,7 @@ from .models import (Favorite, FoodgramUser, Ingredient, Recipe,
 OBJECTS_PER_PAGE = 10
 
 UserAdmin.fieldsets += (
-    ('Extra Fields', {'fields': ('avatar', 'is_subscribed',)}),
+    ('Extra Fields', {'fields': ('avatar',)}),
 )
 
 
@@ -25,7 +25,7 @@ class UsersAdmin(UserAdmin):
     """Класс настройки отображения раздела пользователей."""
 
     list_display = ('id', 'username', 'email', 'first_name', 'last_name',
-                    'avatar', 'is_superuser', 'is_subscribed',
+                    'avatar', 'is_superuser',
                     'is_staff', 'get_count_recipes', 'get_count_subscribers',)
     list_editable = ('username', 'email', 'first_name', 'last_name',
                      'avatar', 'is_superuser', 'is_staff',)
