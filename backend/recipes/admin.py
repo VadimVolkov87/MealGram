@@ -25,7 +25,7 @@ class UsersAdmin(UserAdmin):
     """Класс настройки отображения раздела пользователей."""
 
     list_display = ('id', 'username', 'email', 'first_name', 'last_name',
-                    'avatar', 'is_superuser',
+                    'avatar', 'is_superuser', 'is_subscribed',
                     'is_staff', 'get_count_recipes', 'get_count_subscribers',)
     list_editable = ('username', 'email', 'first_name', 'last_name',
                      'avatar', 'is_superuser', 'is_staff',)
