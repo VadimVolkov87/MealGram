@@ -4,7 +4,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.utils.safestring import mark_safe
 
 from .models import (Favorite, FoodgramUser, Ingredient, Recipe,
-                     Subscription, Tag)
+                     ShoppingCart, Subscription, Tag)
 
 OBJECTS_PER_PAGE = 10
 
@@ -138,4 +138,18 @@ class SubscriptionAdmin(admin.ModelAdmin):
     list_per_page = OBJECTS_PER_PAGE
     search_fields = ('user',)
     list_filter = ('user', 'recipe_author',)
+    empty_value_display = 'Не задано'
+
+
+@admin.register(ShoppingCart)
+class ShoppingCartAdmin(admin.ModelAdmin):
+    """Класс настройки отображения раздела покупок."""
+
+    list_display = ('id', 'user', 'recipe',)
+    list_editable = ('user', 'recipe',)
+    list_display_links = ('id',)
+    ordering = ('user',)
+    list_per_page = OBJECTS_PER_PAGE
+    search_fields = ('user',)
+    list_filter = ('user', 'recipe',)
     empty_value_display = 'Не задано'

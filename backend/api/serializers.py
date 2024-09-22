@@ -1,4 +1,5 @@
 """Модуль сериализаторов приложения."""
+from http import HTTPStatus
 from djoser.serializers import UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
@@ -36,10 +37,10 @@ class FoodgramUserSerializer(UserSerializer):
 
     def validate(self, data):
         """Метод валидации количества."""
-        if data == {}:  # Пустая строка не ловится без этого метода.
+        if not data:
             raise serializers.ValidationError(
                 'Поле аватара не может быть пустым.',
-                code=400
+                code=HTTPStatus.BAD_REQUEST
             )
         return data
 
@@ -126,7 +127,8 @@ class RecipeGetSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         return (request.user.is_authenticated
                 and request.user.shopping_cart_recipe.filter(
-                    recipe_id=obj.id).exists())
+                    recipe_id=obj.id
+                ).exists())
 
 
 class SubscriptionGetSerializer(FoodgramUserSerializer):

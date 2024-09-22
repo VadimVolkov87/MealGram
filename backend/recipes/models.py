@@ -217,13 +217,13 @@ class Subscription(models.Model):
 
         constraints = (
             models.UniqueConstraint(
-                fields=['user', 'recipe_author'],
+                fields=('user', 'recipe_author',),
                 name='unique_subscription'),
         )
 
     def clean(self):
         """Метод проверки подписки."""
-        if self.user == self.subscription:
+        if self.user == self.recipe_author:
             raise ValidationError('Вы подписываетесь на самого себя.')
         return super().save(self)
 
@@ -265,7 +265,7 @@ class Favorite(UserRecipeModel):
 
         constraints = (
             models.UniqueConstraint(
-                fields=('user', 'recipe'),
+                fields=('user', 'recipe',),
                 name='unique_user_favorite_recipe'),
         )
 
@@ -282,6 +282,6 @@ class ShoppingCart(UserRecipeModel):
 
         constraints = (
             models.UniqueConstraint(
-                fields=('user', 'recipe'),
+                fields=('user', 'recipe',),
                 name='unique_user_shoppingcart_recipe'),
         )

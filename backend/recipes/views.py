@@ -10,4 +10,4 @@ def recipe_shortlinked_retreave(request, slug):
     """Функция возврата рецепта по короткой ссылке."""
     recipe = get_object_or_404(Recipe,
                                short_link=slug)
-    return redirect('recipes-detail', id=recipe.id)
+    return redirect(f'/recipes/{recipe.id}/')
