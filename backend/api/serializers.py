@@ -1,5 +1,6 @@
 """Модуль сериализаторов приложения."""
 from http import HTTPStatus
+
 from djoser.serializers import UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
