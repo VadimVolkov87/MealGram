@@ -225,7 +225,6 @@ class Subscription(models.Model):
         """Метод проверки подписки."""
         if self.user == self.recipe_author:
             raise ValidationError('Вы подписываетесь на самого себя.')
-        return super().save(self)
 
     def __str__(self):
         """Метод возвращающий имя."""

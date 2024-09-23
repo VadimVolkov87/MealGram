@@ -80,10 +80,10 @@ class FoodgramUserViewSet(UserViewSet):
     @subscribe.mapping.delete
     def delete_subscription(self, request, id=None):
         """Метод для удаления подписки."""
-        num_deleted_subscription, _ = get_object_or_404(
+        deleted, _ = get_object_or_404(
             FoodgramUser, id=self.kwargs.get('id')
         ).author_subscriptions.filter(user_id=request.user.id).delete()
-        if not num_deleted_subscription:
+        if not deleted:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -162,10 +162,10 @@ class RecipesViewSet(viewsets.ModelViewSet):
     def favorite_shoppingcart_deletion(self, model, id=None):
         """Метод удаления записи из корзины и избранного."""
         get_object_or_404(Recipe, id=id)
-        num_deleted_entry, _ = model.objects.filter(
+        deleted, _ = model.objects.filter(
             user_id=self.request.user.id, recipe_id=id
         ).delete()
-        if not num_deleted_entry:
+        if not deleted:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
