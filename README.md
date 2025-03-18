@@ -59,5 +59,3 @@ git push
 ```text
 https://github.com/VadimVolkov87/foodgram
 ```
-
-Евгений Салахутдинов - код-ревью
