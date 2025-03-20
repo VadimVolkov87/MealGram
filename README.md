@@ -19,7 +19,7 @@
 Клонировать репозиторий:
 
 ```text
-git clone https://github.com/VadimVolkov87/foodgram.git
+git clone https://github.com/VadimVolkov87/MealGram.git
 ```
 
 В корне проекта создать файл .env
@@ -55,5 +55,5 @@ git push
 Вадим Волков - разработка
 
 ```text
-https://github.com/VadimVolkov87/foodgram
+https://github.com/VadimVolkov87
 ```
